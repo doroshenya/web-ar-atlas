@@ -27,7 +27,7 @@
         cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
     }
 
-    /* --- СТИЛИ ДЛЯ МЕТОК (HOTSPOTS) --- */
+    /* --- СТИЛИ ДЛЯ МЕТОК --- */
     .hotspot {
         background: #4caf50;
         border-radius: 50%;
@@ -56,15 +56,33 @@
         z-index: 1000;
     }
 
-    /* Показываем текст при наведении или клике */
-    .hotspot:hover .hotspot-label,
-    .hotspot:focus .hotspot-label { opacity: 1; }
+    .hotspot:hover .hotspot-label, .hotspot:focus .hotspot-label { opacity: 1; }
 
     @keyframes pulse {
         0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
         70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
         100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
     }
+
+    /* --- МОДАЛЬНОЕ ОКНО ДЛЯ AR --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+        display: flex; justify-content: center; align-items: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 2000;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-content {
+        background: #16241c; border: 1px solid #2f5c3f; border-radius: 24px;
+        width: 90%; max-width: 400px; padding: 30px; position: relative;
+        text-align: center; color: white;
+    }
+    .modal-close {
+        position: absolute; top: 15px; right: 20px; background: none; border: none;
+        font-size: 2rem; color: #a3b8aa; cursor: pointer;
+    }
+    .modal-title { font-size: 1.5rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; }
+    .modal-text { font-size: 1rem; line-height: 1.6; color: #eef5f0; }
   </style>
 </head>
 <body>
@@ -87,84 +105,96 @@
         <button id="ar-button" slot="ar-button">Поставить в AR</button>
     </model-viewer>
 
-      <script>
-    const viewer = document.getElementById('viewer');
-    const urlParams = new URLSearchParams(window.location.search);
-    const plantId = urlParams.get('id');
+    <!-- Модальное окно для меток -->
+    <div class="modal-overlay" id="hotspot-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <h3 class="modal-title" id="modal-title">Информация</h3>
+            <p class="modal-text" id="modal-text">Текст</p>
+        </div>
+    </div>
 
-    if (plantId) {
-      fetch('data/plants.json')
-        .then(res => res.json())
-        .then(data => {
-          const plant = data.find(p => p.id === plantId);
-          if (plant) {
-            viewer.src = plant.model_glb || plant.url;
-            if (plant.model_usdz) {
-              viewer.setAttribute('ios-src', plant.model_usdz);
-            }
-            viewer.alt = `3D модель растения ${plant.name}`;
+    <script>
+        const viewer = document.getElementById('viewer');
+        const urlParams = new URLSearchParams(window.location.search);
+        const plantId = urlParams.get('id');
 
-            // Настраиваем масштаб (как в рабочей версии)
-            if (plant.id === 'cactus') {
-              viewer.setAttribute('scale', '0.01 0.01 0.01');
-              viewer.setAttribute('ar-scale', 'fixed');
-            } else if (plant.id === 'sunflower') {
-              viewer.setAttribute('scale', '0.005 0.005 0.005');
-            }
+        // Элементы модального окна
+        const modal = document.getElementById('hotspot-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalText = document.getElementById('modal-text');
+        const modalClose = document.getElementById('modal-close');
 
-            // Добавляем метки
-            if (plant.hotspots && plant.hotspots.length > 0) {
-              plant.hotspots.forEach((hs, index) => {
-                const spot = document.createElement('button');
-                spot.className = 'hotspot';
-                spot.setAttribute('slot', `hotspot-${index}`);
-                spot.setAttribute('data-position', hs.position);
-                spot.setAttribute('data-normal', '0m 1m 0m');
-                
-                // Создаем текст внутри метки
-                spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`;
+        // Закрытие окна
+        modalClose.addEventListener('click', () => modal.classList.remove('active'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
 
-                // --- МАГИЯ КЛИКА ---
-                spot.addEventListener('click', () => {
-                    // 1. Показываем текст (если он был скрыт)
-                    // (Можно оставить, как есть, текст и так появится)
+        if (plantId) {
+            fetch('data/plants.json')
+                .then(res => res.json())
+                .then(data => {
+                    const plant = data.find(p => p.id === plantId);
+                    if (plant) {
+                        viewer.src = plant.model_glb || plant.url;
+                        if (plant.model_usdz) {
+                            viewer.setAttribute('ios-src', plant.model_usdz);
+                        }
+                        viewer.alt = `3D модель растения ${plant.name}`;
 
-                    // 2. Приближаем камеру к метке
-                    // camera-orbit="theta phi radius" 
-                    // theta: угол поворота (градусы), phi: наклон, radius: расстояние
-                    // Мы берем координаты метки, чтобы понять, куда смотреть
-                    // Но проще задать фиксированный зум для всех:
-                    
-                    // Если это кактус:
-                    if (plant.id === 'cactus') {
-                         viewer.setAttribute('camera-orbit', '0deg 75deg 0.5m'); 
-                    } else if (plant.id === 'sunflower') {
-                         viewer.setAttribute('camera-orbit', '0deg 75deg 0.8m');
-                    } else {
-                         viewer.setAttribute('camera-orbit', '0deg 75deg 1m');
+                        // Масштаб (оставляем как в рабочей версии)
+                        if (plant.id === 'cactus') {
+                            viewer.setAttribute('scale', '0.01 0.01 0.01');
+                            viewer.setAttribute('ar-scale', 'fixed');
+                        } else if (plant.id === 'sunflower') {
+                            viewer.setAttribute('scale', '0.005 0.005 0.005');
+                        }
+
+                        // Добавляем метки
+                        if (plant.hotspots && plant.hotspots.length > 0) {
+                            plant.hotspots.forEach((hs, index) => {
+                                const spot = document.createElement('button');
+                                spot.className = 'hotspot';
+                                spot.setAttribute('slot', `hotspot-${index}`);
+                                spot.setAttribute('data-position', hs.position);
+                                spot.setAttribute('data-normal', '0m 1m 0m');
+                                
+                                // Убираем всплывающий текст (он будет в модалке)
+                                // spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`; 
+                                
+                                // Добавляем обработчик клика
+                                spot.addEventListener('click', () => {
+                                    // 1. Открываем модальное окно
+                                    modalTitle.textContent = "О растении";
+                                    modalText.textContent = hs.text;
+                                    modal.classList.add('active');
+
+                                    // 2. (Опционально) Приближаем камеру в 3D-режиме
+                                    // В AR это не сработает, но в 3D будет красиво
+                                    if (!viewer.xr || !viewer.xr.isPresenting) {
+                                        if (plant.id === 'cactus') {
+                                            viewer.setAttribute('camera-orbit', '0deg 75deg 0.5m'); 
+                                        } else {
+                                            viewer.setAttribute('camera-orbit', '0deg 75deg 1m');
+                                        }
+                                    }
+                                });
+
+                                viewer.appendChild(spot);
+                            });
+                        }
+
+                        viewer.style.display = 'block';
                     }
-                    
-                    // 3. Делаем плавный переход (чтобы не было резко)
-                    viewer.setAttribute('interpolation-decay', '200');
-                });
-
-                viewer.appendChild(spot);
-              });
-            }
-
-            viewer.style.display = 'block';
-          }
-        })
-        .catch(err => console.error("Ошибка загрузки JSON:", err));
-    }
-
-    // Возврат камеры в исходное положение при клике по пустому месту
-    viewer.addEventListener('click', (e) => {
-        // Если кликнули не по метке (а по самой модели или фону)
-        if (!e.target.classList.contains('hotspot')) {
-            viewer.setAttribute('camera-orbit', '0deg 75deg 2m'); // Отдаляем
+                })
+                .catch(err => console.error("Ошибка загрузки JSON:", err));
         }
-    });
-  </script>
+
+        // Возврат камеры при клике по пустому месту (только в 3D)
+        viewer.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('hotspot') && (!viewer.xr || !viewer.xr.isPresenting)) {
+                viewer.setAttribute('camera-orbit', '0deg 75deg 2m');
+            }
+        });
+    </script>
 </body>
 </html>
