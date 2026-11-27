@@ -7,194 +7,141 @@
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
+    model-viewer { width: 100vw; height: 100vh; background: #1d3426; }
     
-    model-viewer { 
-        width: 100vw; 
-        height: 100vh; 
-        background: #1d3426;
-        --poster-color: transparent;
-    }
-
     .back-btn {
-        position: absolute; top: 20px; left: 20px; z-index: 100;
-        padding: 10px 18px; background: rgba(0,0,0,0.6); color: white;
-        border: none; border-radius: 25px; font-size: 14px; cursor: pointer;
+      position: absolute; top: 20px; left: 20px; z-index: 100;
+      padding: 10px 18px; background: rgba(0,0,0,0.6); color: white;
+      border: none; border-radius: 25px; font-size: 14px; cursor: pointer;
     }
     #ar-button {
-        position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-        padding: 15px 30px; border-radius: 999px; border: 2px solid white;
-        background: #4caf50; color: white; font-size: 18px; font-weight: bold;
-        cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
+      position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+      padding: 15px 30px; border-radius: 999px; border: 2px solid white;
+      background: #4caf50; color: white; font-size: 18px; font-weight: bold;
+      cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
     }
 
-    /* --- СТИЛИ ДЛЯ МЕТОК --- */
+    /* --- СТИЛИ ДЛЯ МЕТОК (КАК БЫЛО) --- */
     .hotspot {
-        background: #4caf50;
-        border-radius: 50%;
-        border: 2px solid white;
-        width: 24px;
-        height: 24px;
-        cursor: pointer;
-        animation: pulse 1.5s infinite;
-        position: relative;
+      background: #4caf50;
+      border-radius: 50%;
+      border: 2px solid white;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      animation: pulse 1.5s infinite;
+      position: relative;
     }
     
     .hotspot-label {
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-size: 14px;
-        position: absolute;
-        top: -45px;
-        left: 50%;
-        transform: translateX(-50%);
-        white-space: nowrap;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.3s;
-        z-index: 1000;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      position: absolute;
+      top: -45px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0; /* Скрыто по умолчанию */
+      transition: opacity 0.3s;
+      z-index: 1000;
     }
 
     .hotspot:hover .hotspot-label, .hotspot:focus .hotspot-label { opacity: 1; }
 
     @keyframes pulse {
-        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
     }
-
-    /* --- МОДАЛЬНОЕ ОКНО ДЛЯ AR --- */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
-        display: flex; justify-content: center; align-items: center;
-        opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 2000;
-    }
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    .modal-content {
-        background: #16241c; border: 1px solid #2f5c3f; border-radius: 24px;
-        width: 90%; max-width: 400px; padding: 30px; position: relative;
-        text-align: center; color: white;
-    }
-    .modal-close {
-        position: absolute; top: 15px; right: 20px; background: none; border: none;
-        font-size: 2rem; color: #a3b8aa; cursor: pointer;
-    }
-    .modal-title { font-size: 1.5rem; font-weight: 800; color: #4ade80; margin-bottom: 15px; }
-    .modal-text { font-size: 1rem; line-height: 1.6; color: #eef5f0; }
   </style>
 </head>
 <body>
 
-    <button class="back-btn" onclick="history.back()">← Назад</button>
+  <button class="back-btn" onclick="history.back()">← Назад</button>
 
-    <model-viewer 
-        id="viewer"
-        src="" 
-        ios-src=""
-        alt="3D модель растения"
-        ar 
-        ar-modes="webxr scene-viewer quick-look"
-        ar-placement="floor" 
-        camera-controls 
-        shadow-intensity="1"
-        environment-image="neutral"
-        style="display: none;">
-        
-        <button id="ar-button" slot="ar-button">Поставить в AR</button>
-    </model-viewer>
+  <model-viewer 
+    id="viewer"
+    src="" 
+    ios-src=""
+    alt="3D модель растения"
+    ar 
+    ar-modes="webxr scene-viewer quick-look"
+    ar-placement="floor" 
+    camera-controls 
+    shadow-intensity="1"
+    environment-image="neutral"
+    style="display: none;">
+    
+    <button id="ar-button" slot="ar-button">Поставить в AR</button>
+  </model-viewer>
 
-    <!-- Модальное окно для меток -->
-    <div class="modal-overlay" id="hotspot-modal">
-        <div class="modal-content">
-            <button class="modal-close" id="modal-close">&times;</button>
-            <h3 class="modal-title" id="modal-title">Информация</h3>
-            <p class="modal-text" id="modal-text">Текст</p>
-        </div>
-    </div>
+  <script>
+    const viewer = document.getElementById('viewer');
+    const urlParams = new URLSearchParams(window.location.search);
+    const plantId = urlParams.get('id');
 
-    <script>
-        const viewer = document.getElementById('viewer');
-        const urlParams = new URLSearchParams(window.location.search);
-        const plantId = urlParams.get('id');
-
-        // Элементы модального окна
-        const modal = document.getElementById('hotspot-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalText = document.getElementById('modal-text');
-        const modalClose = document.getElementById('modal-close');
-
-        // Закрытие окна
-        modalClose.addEventListener('click', () => modal.classList.remove('active'));
-        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
-
-        if (plantId) {
-            fetch('data/plants.json')
-                .then(res => res.json())
-                .then(data => {
-                    const plant = data.find(p => p.id === plantId);
-                    if (plant) {
-                        viewer.src = plant.model_glb || plant.url;
-                        if (plant.model_usdz) {
-                            viewer.setAttribute('ios-src', plant.model_usdz);
-                        }
-                        viewer.alt = `3D модель растения ${plant.name}`;
-
-                        // Масштаб (оставляем как в рабочей версии)
-                        if (plant.id === 'cactus') {
-                            viewer.setAttribute('scale', '0.01 0.01 0.01');
-                            viewer.setAttribute('ar-scale', 'fixed');
-                        } else if (plant.id === 'sunflower') {
-                            viewer.setAttribute('scale', '0.005 0.005 0.005');
-                        }
-
-                        // Добавляем метки
-                        if (plant.hotspots && plant.hotspots.length > 0) {
-                            plant.hotspots.forEach((hs, index) => {
-                                const spot = document.createElement('button');
-                                spot.className = 'hotspot';
-                                spot.setAttribute('slot', `hotspot-${index}`);
-                                spot.setAttribute('data-position', hs.position);
-                                spot.setAttribute('data-normal', '0m 1m 0m');
-                                
-                                // Убираем всплывающий текст (он будет в модалке)
-                                // spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`; 
-                                
-                                // Добавляем обработчик клика
-                                spot.addEventListener('click', () => {
-                                    // 1. Открываем модальное окно
-                                    modalTitle.textContent = "О растении";
-                                    modalText.textContent = hs.text;
-                                    modal.classList.add('active');
-
-                                    // 2. (Опционально) Приближаем камеру в 3D-режиме
-                                    // В AR это не сработает, но в 3D будет красиво
-                                    if (!viewer.xr || !viewer.xr.isPresenting) {
-                                        if (plant.id === 'cactus') {
-                                            viewer.setAttribute('camera-orbit', '0deg 75deg 0.5m'); 
-                                        } else {
-                                            viewer.setAttribute('camera-orbit', '0deg 75deg 1m');
-                                        }
-                                    }
-                                });
-
-                                viewer.appendChild(spot);
-                            });
-                        }
-
-                        viewer.style.display = 'block';
-                    }
-                })
-                .catch(err => console.error("Ошибка загрузки JSON:", err));
-        }
-
-        // Возврат камеры при клике по пустому месту (только в 3D)
-        viewer.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('hotspot') && (!viewer.xr || !viewer.xr.isPresenting)) {
-                viewer.setAttribute('camera-orbit', '0deg 75deg 2m');
+    if (plantId) {
+      fetch('data/plants.json')
+        .then(res => res.json())
+        .then(data => {
+          const plant = data.find(p => p.id === plantId);
+          if (plant) {
+            viewer.src = plant.model_glb || plant.url;
+            if (plant.model_usdz) {
+              viewer.setAttribute('ios-src', plant.model_usdz);
             }
-        });
-    </script>
+            viewer.alt = `3D модель растения ${plant.name}`;
+
+            if (plant.id === 'cactus') {
+              viewer.setAttribute('scale', '0.01 0.01 0.01');
+              viewer.setAttribute('ar-scale', 'fixed');
+            } else if (plant.id === 'sunflower') {
+              viewer.setAttribute('scale', '0.005 0.005 0.005');
+            }
+
+            // Добавляем метки с текстом внутри (как было)
+            if (plant.hotspots && plant.hotspots.length > 0) {
+              plant.hotspots.forEach((hs, index) => {
+                const spot = document.createElement('button');
+                spot.className = 'hotspot';
+                spot.setAttribute('slot', `hotspot-${index}`);
+                spot.setAttribute('data-position', hs.position);
+                spot.setAttribute('data-normal', '0m 1m 0m');
+                
+                // Текст внутри метки
+                spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`;
+                
+                // При клике в 3D-режиме приближаем камеру (в AR не сработает)
+                spot.addEventListener('click', () => {
+                  if (!viewer.xr || !viewer.xr.isPresenting) {
+                    if (plant.id === 'cactus') {
+                      viewer.setAttribute('camera-orbit', '0deg 75deg 0.5m'); 
+                    } else {
+                      viewer.setAttribute('camera-orbit', '0deg 75deg 1m');
+                    }
+                  }
+                });
+
+                viewer.appendChild(spot);
+              });
+            }
+
+            viewer.style.display = 'block';
+          }
+        })
+        .catch(err => console.error("Ошибка загрузки JSON:", err));
+    }
+
+    // Возврат камеры при клике по пустому месту (только в 3D)
+    viewer.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('hotspot') && (!viewer.xr || !viewer.xr.isPresenting)) {
+        viewer.setAttribute('camera-orbit', '0deg 75deg 2m');
+      }
+    });
+  </script>
 </body>
 </html>
