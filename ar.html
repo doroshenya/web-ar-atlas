@@ -16,19 +16,10 @@
     }
 
     #ar-button {
-      position: absolute;
-      bottom: 150px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 22px;
-      border-radius: 999px;
-      border: none;
-      background: #4caf50;
-      color: #04140a;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      z-index: 100;
+      position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+      padding: 15px 30px; border-radius: 999px; border: 2px solid white;
+      background: #4caf50; color: white; font-size: 18px; font-weight: bold;
+      cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
     }
   </style>
 </head>
@@ -38,14 +29,17 @@
 
   <model-viewer 
     id="viewer"
-    src=""
+    src="" 
     ios-src=""
-    alt="3D-модель растения"
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    ar-placement="floor"
-    ar-scale="auto"
-    camera-controls>
+    alt="3D модель растения"
+    ar 
+    ar-modes="scene-viewer quick-look"
+    ar-placement="floor" 
+    ar-scale="auto" 
+    camera-controls 
+    shadow-intensity="1"
+    environment-image="neutral"
+    style="display: none;">
     
     <button id="ar-button" slot="ar-button">Поставить в AR</button>
   </model-viewer>
@@ -56,18 +50,29 @@
     const plantId = urlParams.get('id');
 
     if (plantId) {
-        fetch('data/plants.json')
-            .then(res => res.json())
-            .then(data => {
-                const plant = data.find(p => p.id === plantId);
-                if (plant) {
-                    viewer.src = plant.model_glb || plant.url;
-                    if (plant.model_usdz) {
-                        viewer.setAttribute('ios-src', plant.model_usdz);
-                    }
-                    viewer.alt = `3D-модель ${plant.name}`;
-                }
-            });
+      fetch('data/plants.json')
+        .then(res => res.json())
+        .then(data => {
+          const plant = data.find(p => p.id === plantId);
+          if (plant) {
+            viewer.src = plant.model_glb || plant.url;
+            if (plant.model_usdz) {
+              viewer.setAttribute('ios-src', plant.model_usdz);
+            }
+            viewer.alt = `3D модель растения ${plant.name}`;
+
+            // Настраиваем масштаб ТОЛЬКО для экрана, чтобы влезло в 3D-просмотр
+            if (plant.id === 'cactus') {
+              viewer.setAttribute('scale', '0.01 0.01 0.01');
+            } else if (plant.id === 'sunflower') {
+              viewer.setAttribute('scale', '0.005 0.005 0.005');
+            }
+            // Для папоротника масштаб не задаем (он и так нормальный)
+
+            viewer.style.display = 'block';
+          }
+        })
+        .catch(err => console.error("Ошибка загрузки JSON:", err));
     }
   </script>
 </body>
