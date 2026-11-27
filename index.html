@@ -35,6 +35,18 @@
             --input-bg: rgba(255, 255, 255, 0.9);
         }
 
+        /* --- ДИНАМИЧЕСКИЕ ФОНЫ ДЛЯ КАТЕГОРИЙ --- */
+        .bg-default { background: var(--bg-gradient); }
+        .bg-indoor { background: radial-gradient(circle at 50% 0%, #2c3e50 0%, #0d1b14 100%); } /* Дом */
+        .bg-succulent { background: radial-gradient(circle at 50% 0%, #8b5a2b 0%, #0d1b14 100%); } /* Пустыня */
+        .bg-garden { background: radial-gradient(circle at 50% 0%, #4a7c59 0%, #0d1b14 100%); } /* Сад */
+
+        /* Светлые версии фонов */
+        body.light-theme.bg-default { background: var(--bg-gradient); }
+        body.light-theme.bg-indoor { background: radial-gradient(circle at 50% 0%, #dce4ed 0%, #f4f7f5 100%); }
+        body.light-theme.bg-succulent { background: radial-gradient(circle at 50% 0%, #fcebd5 0%, #f4f7f5 100%); }
+        body.light-theme.bg-garden { background: radial-gradient(circle at 50% 0%, #d5f0df 0%, #f4f7f5 100%); }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -47,45 +59,19 @@
             transition: background 0.6s ease, color 0.4s ease;
         }
 
-        header {
-            padding: 60px 20px 30px;
-            text-align: center;
-            position: relative;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        header { padding: 60px 20px 30px; text-align: center; position: relative; max-width: 1200px; margin: 0 auto; }
 
         .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-main);
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            backdrop-filter: blur(10px);
+            position: absolute; top: 20px; right: 20px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            color: var(--text-main); width: 44px; height: 44px;
+            border-radius: 50%; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 1.2rem; backdrop-filter: blur(10px);
         }
 
-        h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, var(--text-main) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        body.light-theme h1 {
-            background: none;
-            -webkit-text-fill-color: var(--text-main);
-            color: var(--text-main);
-        }
+        h1 { font-size: 3rem; font-weight: 800; margin-bottom: 16px; background: linear-gradient(135deg, var(--text-main) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        body.light-theme h1 { background: none; -webkit-text-fill-color: var(--text-main); color: var(--text-main); }
 
         .subtitle { color: var(--text-muted); max-width: 600px; margin: 0 auto 30px; }
         body.light-theme .subtitle { color: var(--text-main); font-weight: 500; }
@@ -158,7 +144,7 @@
         .modal-detail { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--card-border); color: var(--text-muted); }
     </style>
 </head>
-<body>
+<body class="bg-default"> <!-- Начальный фон -->
 
     <header>
         <button class="theme-toggle" id="theme-toggle">🌙</button>
@@ -172,11 +158,12 @@
                     <input type="text" id="search-input" placeholder="Поиск растения...">
                 </div>
                 
+                <!-- ВАЖНО: добавили data-bg для каждого фильтра -->
                 <div class="categories-nav" id="filter-nav">
-                    <button class="category-btn active" data-filter="all">Все</button>
-                    <button class="category-btn" data-filter="indoor">Комнатные</button>
-                    <button class="category-btn" data-filter="garden">Садовые</button>
-                    <button class="category-btn" data-filter="succulent">Суккуленты</button>
+                    <button class="category-btn active" data-filter="all" data-bg="bg-default">Все</button>
+                    <button class="category-btn" data-filter="indoor" data-bg="bg-indoor">Комнатные</button>
+                    <button class="category-btn" data-filter="garden" data-bg="bg-garden">Садовые</button>
+                    <button class="category-btn" data-filter="succulent" data-bg="bg-succulent">Суккуленты</button>
                 </div>
             </div>
         </div>
@@ -256,6 +243,18 @@
                 btn.addEventListener('click', () => {
                     buttons.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
+                    
+                    // --- СМЕНА ФОНА ---
+                    const bgClass = btn.getAttribute('data-bg');
+                    // Удаляем старые классы фона
+                    document.body.className = document.body.className.replace(/bg-\w+/g, '').trim();
+                    // Добавляем новый
+                    if (bgClass) document.body.classList.add(bgClass);
+                    // Возвращаем светлую тему, если она была
+                    if (document.body.classList.contains('light-theme')) {
+                        document.body.classList.add('light-theme');
+                    }
+
                     filterCards(btn.getAttribute('data-filter'), searchInput.value.toLowerCase());
                 });
             });
