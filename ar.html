@@ -5,69 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>AR Просмотр</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <style>
-    body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
-    model-viewer {
-        width: 100vw;
-        height: 100vh;
-        background: #1d3426;
-        --poster-color: transparent;
+      <style>
+        body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
         
-        /* Магия: сдвигаем модель на 50% вверх */
-        transform: translateY(20%); 
-    }
-    #ar-button {
-      position: absolute;
-      bottom: 150px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 22px;
-      border-radius: 999px;
-      border: none;
-      background: #4caf50;
-      color: #04140a;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      z-index: 100;
-    }
-  </style>
+        /* Вот тут мы задаем базовые стили для model-viewer */
+        model-viewer { 
+            width: 100vw; 
+            height: 100vh; 
+            background: #1d3426;
+            --poster-color: transparent;
+        }
+
+        /* Кнопка назад и кнопка AR */
+        .back-btn {
+            position: absolute; top: 20px; left: 20px; z-index: 100;
+            padding: 10px 18px; background: rgba(0,0,0,0.6); color: white;
+            border: none; border-radius: 25px; font-size: 14px; cursor: pointer;
+        }
+        #ar-button {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            padding: 15px 30px; border-radius: 999px; border: 2px solid white;
+            background: #4caf50; color: white; font-size: 18px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
+        }
+    </style>
 </head>
 <body>
 
-  <model-viewer 
-    id="viewer"
-    src=""
-    ios-src=""
-    alt="3D-модель растения"
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    ar-placement="floor"
-    ar-scale="auto"
-    camera-controls>
-    
-    <button id="ar-button" slot="ar-button">Поставить в AR</button>
-  </model-viewer>
+    <button class="back-btn" onclick="history.back()">← Назад</button>
 
-  <script>
-    const viewer = document.getElementById('viewer');
-    const urlParams = new URLSearchParams(window.location.search);
-    const plantId = urlParams.get('id');
+    <!-- Мы добавили атрибут scale -->
+    <model-viewer 
+        id="viewer"
+        src="" 
+        ios-src=""
+        alt="3D модель растения"
+        ar 
+        ar-modes="webxr scene-viewer quick-look"
+        ar-placement="floor" 
+        camera-controls 
+        shadow-intensity="1"
+        environment-image="neutral"
+        style="display: none;">
+        
+        <!-- Обратите внимание: тут будет динамический масштаб -->
+        <button id="ar-button" slot="ar-button">Поставить в AR</button>
+    </model-viewer>
 
-    if (plantId) {
-        fetch('data/plants.json')
-            .then(res => res.json())
-            .then(data => {
-                const plant = data.find(p => p.id === plantId);
-                if (plant) {
-                    viewer.src = plant.model_glb || plant.url;
-                    if (plant.model_usdz) {
-                        viewer.setAttribute('ios-src', plant.model_usdz);
+    <script>
+        const viewer = document.getElementById('viewer');
+        const urlParams = new URLSearchParams(window.location.search);
+        const plantId = urlParams.get('id');
+
+        if (plantId) {
+            fetch('data/plants.json')
+                .then(res => res.json())
+                .then(data => {
+                    const plant = data.find(p => p.id === plantId);
+                    if (plant) {
+                        viewer.src = plant.model_glb || plant.url;
+                        if (plant.model_usdz) {
+                            viewer.setAttribute('ios-src', plant.model_usdz);
+                        }
+                        viewer.alt = `3D модель растения ${plant.name}`;
+                        
+                        // --- ГЛАВНАЯ МАГИЯ ---
+                        // Если это кактус или подсолнух, мы принудительно уменьшаем их
+                        // через атрибут scale в CSS (через JS).
+                        if (plant.id === 'cactus') {
+                            viewer.style.transform = 'scale(0.05)'; // Уменьшаем кактус
+                        } else if (plant.id === 'sunflower') {
+                            viewer.style.transform = 'scale(0.02)'; // Уменьшаем подсолнух
+                        } else {
+                            viewer.style.transform = 'scale(1)'; // Папоротник оставляем как есть
+                        }
+
+                        viewer.style.display = 'block';
                     }
-                    viewer.alt = `3D-модель ${plant.name}`;
-                }
-            });
-    }
-  </script>
+                })
+                .catch(err => console.error("Ошибка загрузки JSON:", err));
+        }
+    </script>
 </body>
 </html>
