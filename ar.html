@@ -32,7 +32,6 @@
 
     <button class="back-btn" onclick="history.back()">← Назад</button>
 
-    <!-- Для папоротника по умолчанию ставим auto -->
     <model-viewer 
         id="viewer"
         src="" 
@@ -67,17 +66,15 @@
                         }
                         viewer.alt = `3D модель растения ${plant.name}`;
 
-                        // Настраиваем масштаб и режим AR для каждого растения
+                        // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
+                        // Задаем масштаб для 3D-просмотра.
+                        // При ar-scale="auto" это же значение подхватится для AR.
                         if (plant.id === 'cactus') {
                             viewer.setAttribute('scale', '0.01 0.01 0.01');
-                            viewer.setAttribute('ar-scale', 'fixed'); // Фиксируем масштаб
                         } else if (plant.id === 'sunflower') {
                             viewer.setAttribute('scale', '0.005 0.005 0.005');
-                            viewer.setAttribute('ar-scale', 'fixed'); // Фиксируем масштаб
-                        } else {
-                            // Для папоротника оставляем auto (он работает)
-                            viewer.setAttribute('ar-scale', 'auto');
                         }
+                        // Для папоротника ничего не задаем (он работает как есть)
 
                         viewer.style.display = 'block';
                     }
