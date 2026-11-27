@@ -18,7 +18,11 @@
       "humidity":    {"min": 60, "max": 90, "zone": 40},
       "light":       {"min": 20, "max": 50, "zone": 40}
     },
-    "weights": { "temperature": 0.25, "humidity": 0.5, "light": 0.25 }
+    "weights": { "temperature": 0.25, "humidity": 0.5, "light": 0.25 },
+    "hotspots": [
+      { "position": "0m 0.3m 0m", "text": "Листья (вайи): осуществляют фотосинтез" },
+      { "position": "0m 0.1m 0m", "text": "Корневище: запасает питательные вещества" }
+    ]
   },
   {
     "id": "cactus",
@@ -39,7 +43,11 @@
       "humidity":    {"min": 5,  "max": 30, "zone": 40},
       "light":       {"min": 70, "max": 100, "zone": 50}
     },
-    "weights": { "temperature": 0.25, "humidity": 0.5, "light": 0.25 }
+    "weights": { "temperature": 0.25, "humidity": 0.5, "light": 0.25 },
+    "hotspots": [
+      { "position": "0m 0.15m 0m", "text": "Стебель: запасает воду" },
+      { "position": "0.05m 0.2m 0m", "text": "Колючки: видоизмененные листья для защиты" }
+    ]
   },
   {
     "id": "sunflower",
@@ -60,6 +68,10 @@
       "humidity":    {"min": 40, "max": 65, "zone": 35},
       "light":       {"min": 70, "max": 100, "zone": 50}
     },
-    "weights": { "temperature": 0.25, "humidity": 0.3, "light": 0.45 }
+    "weights": { "temperature": 0.25, "humidity": 0.3, "light": 0.45 },
+    "hotspots": [
+      { "position": "0m 0.25m 0m", "text": "Цветок: привлекает насекомых" },
+      { "position": "0m 0.1m 0m", "text": "Стебель: поддерживает растение" }
+    ]
   }
 ]

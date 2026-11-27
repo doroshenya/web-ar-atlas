@@ -5,36 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>AR Просмотр</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-      <style>
-        body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
-        
-        /* Вот тут мы задаем базовые стили для model-viewer */
-        model-viewer { 
-            width: 100vw; 
-            height: 100vh; 
-            background: #1d3426;
-            --poster-color: transparent;
-        }
+  <style>
+    body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
+    
+    model-viewer { 
+        width: 100vw; 
+        height: 100vh; 
+        background: #1d3426;
+        --poster-color: transparent;
+    }
 
-        /* Кнопка назад и кнопка AR */
-        .back-btn {
-            position: absolute; top: 20px; left: 20px; z-index: 100;
-            padding: 10px 18px; background: rgba(0,0,0,0.6); color: white;
-            border: none; border-radius: 25px; font-size: 14px; cursor: pointer;
-        }
-        #ar-button {
-            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-            padding: 15px 30px; border-radius: 999px; border: 2px solid white;
-            background: #4caf50; color: white; font-size: 18px; font-weight: bold;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
-        }
-    </style>
+    .back-btn {
+        position: absolute; top: 20px; left: 20px; z-index: 100;
+        padding: 10px 18px; background: rgba(0,0,0,0.6); color: white;
+        border: none; border-radius: 25px; font-size: 14px; cursor: pointer;
+    }
+    #ar-button {
+        position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+        padding: 15px 30px; border-radius: 999px; border: 2px solid white;
+        background: #4caf50; color: white; font-size: 18px; font-weight: bold;
+        cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
+    }
+
+    /* --- СТИЛИ ДЛЯ МЕТОК (HOTSPOTS) --- */
+    .hotspot {
+        background: #4caf50;
+        border-radius: 50%;
+        border: 2px solid white;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        animation: pulse 1.5s infinite;
+        position: relative;
+    }
+    
+    .hotspot-label {
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        position: absolute;
+        top: -45px;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 1000;
+    }
+
+    /* Показываем текст при наведении или клике */
+    .hotspot:hover .hotspot-label,
+    .hotspot:focus .hotspot-label { opacity: 1; }
+
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+  </style>
 </head>
 <body>
 
     <button class="back-btn" onclick="history.back()">← Назад</button>
 
-    <!-- Мы добавили атрибут scale -->
     <model-viewer 
         id="viewer"
         src="" 
@@ -48,11 +84,10 @@
         environment-image="neutral"
         style="display: none;">
         
-        <!-- Обратите внимание: тут будет динамический масштаб -->
         <button id="ar-button" slot="ar-button">Поставить в AR</button>
     </model-viewer>
 
-        <script>
+    <script>
         const viewer = document.getElementById('viewer');
         const urlParams = new URLSearchParams(window.location.search);
         const plantId = urlParams.get('id');
@@ -63,21 +98,32 @@
                 .then(data => {
                     const plant = data.find(p => p.id === plantId);
                     if (plant) {
+                        // 1. Ставим модель и масштаб (как в рабочей версии)
                         viewer.src = plant.model_glb || plant.url;
                         if (plant.model_usdz) {
                             viewer.setAttribute('ios-src', plant.model_usdz);
                         }
                         viewer.alt = `3D модель растения ${plant.name}`;
 
-                        // --- МАГИЯ МАСШТАБА ---
-                        // Уменьшаем именно 3D-модель, а не всё окно.
                         if (plant.id === 'cactus') {
-                            viewer.setAttribute('scale', '0.01 0.01 0.01'); // Для экрана
-                            viewer.setAttribute('ar-scale', 'fixed');      // Фиксируем в AR
-                            // Внимание: в AR мы не можем напрямую задать множитель, 
-                            // поэтому для AR придется использовать небольшую хитрость (см. ниже)
+                            viewer.setAttribute('scale', '0.01 0.01 0.01');
+                            viewer.setAttribute('ar-scale', 'fixed');
                         } else if (plant.id === 'sunflower') {
                             viewer.setAttribute('scale', '0.005 0.005 0.005');
+                        }
+
+                        // 2. Добавляем метки (Hotspots)
+                        if (plant.hotspots && plant.hotspots.length > 0) {
+                            plant.hotspots.forEach((hs, index) => {
+                                const spot = document.createElement('button');
+                                spot.className = 'hotspot';
+                                spot.setAttribute('slot', `hotspot-${index}`);
+                                spot.setAttribute('data-position', hs.position);
+                                spot.setAttribute('data-normal', '0m 1m 0m'); // Направление "вверх"
+                                spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`;
+                                
+                                viewer.appendChild(spot);
+                            });
                         }
 
                         viewer.style.display = 'block';
