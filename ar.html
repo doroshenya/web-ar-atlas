@@ -8,6 +8,7 @@
       <style>
         body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
         
+        /* Вот тут мы задаем базовые стили для model-viewer */
         model-viewer { 
             width: 100vw; 
             height: 100vh; 
@@ -15,6 +16,7 @@
             --poster-color: transparent;
         }
 
+        /* Кнопка назад и кнопка AR */
         .back-btn {
             position: absolute; top: 20px; left: 20px; z-index: 100;
             padding: 10px 18px; background: rgba(0,0,0,0.6); color: white;
@@ -32,24 +34,25 @@
 
     <button class="back-btn" onclick="history.back()">← Назад</button>
 
+    <!-- Мы добавили атрибут scale -->
     <model-viewer 
         id="viewer"
         src="" 
         ios-src=""
         alt="3D модель растения"
         ar 
-        ar-modes="scene-viewer quick-look"
+        ar-modes="webxr scene-viewer quick-look"
         ar-placement="floor" 
-        ar-scale="auto" 
         camera-controls 
         shadow-intensity="1"
         environment-image="neutral"
         style="display: none;">
         
+        <!-- Обратите внимание: тут будет динамический масштаб -->
         <button id="ar-button" slot="ar-button">Поставить в AR</button>
     </model-viewer>
 
-    <script>
+        <script>
         const viewer = document.getElementById('viewer');
         const urlParams = new URLSearchParams(window.location.search);
         const plantId = urlParams.get('id');
@@ -66,15 +69,16 @@
                         }
                         viewer.alt = `3D модель растения ${plant.name}`;
 
-                        // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
-                        // Задаем масштаб для 3D-просмотра.
-                        // При ar-scale="auto" это же значение подхватится для AR.
+                        // --- МАГИЯ МАСШТАБА ---
+                        // Уменьшаем именно 3D-модель, а не всё окно.
                         if (plant.id === 'cactus') {
-                            viewer.setAttribute('scale', '0.01 0.01 0.01');
+                            viewer.setAttribute('scale', '0.01 0.01 0.01'); // Для экрана
+                            viewer.setAttribute('ar-scale', 'fixed');      // Фиксируем в AR
+                            // Внимание: в AR мы не можем напрямую задать множитель, 
+                            // поэтому для AR придется использовать небольшую хитрость (см. ниже)
                         } else if (plant.id === 'sunflower') {
                             viewer.setAttribute('scale', '0.005 0.005 0.005');
                         }
-                        // Для папоротника ничего не задаем (он работает как есть)
 
                         viewer.style.display = 'block';
                     }
