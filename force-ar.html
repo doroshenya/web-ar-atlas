@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Принудительный AR</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px 20px; background: #1d3426; color: white; }
+        button { 
+            padding: 20px 40px; 
+            font-size: 20px; 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Тест Scene Viewer</h1>
+    <p>Нажмите кнопку, чтобы открыть кактус в системном AR.</p>
+    
+    <!-- 
+      Эта ссылка напрямую вызывает Scene Viewer (приложение ARCore). 
+      Она не зависит от model-viewer и его проверок.
+    -->
+    <button onclick="window.location.href='intent://arvr.google.com/scene-viewer/1.0?file=https://doroshenya.github.io/web-ar-atlas/models/cactus/scene.gltf&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;end;'">
+        Открыть AR через Scene Viewer
+    </button>
+</body>
+</html>
