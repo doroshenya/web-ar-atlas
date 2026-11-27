@@ -7,7 +7,15 @@
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
-    model-viewer { width: 100vw; height: 100vh; background: #1d3426; }
+    model-viewer {
+        width: 100vw;
+        height: 100vh;
+        background: #1d3426;
+        --poster-color: transparent;
+        
+        /* Магия: сдвигаем модель на 50% вверх */
+        transform: translateY(20%); 
+    }
     #ar-button {
       position: absolute;
       bottom: 150px;
