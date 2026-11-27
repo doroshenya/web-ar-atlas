@@ -31,7 +31,7 @@
     "url": "./models/cactus/scene.gltf",
     "model_glb": "./models/cactus/scene.gltf",
     "model_usdz": "./models/Cactus.usdz",
-    "height": 0.4,
+    "height": 0.2,
     "likes": "Любит жару, сухой воздух и яркий свет",
     "description": "Суккулент, устойчив к засухе и яркому солнцу.",
     "comfort": {
@@ -52,7 +52,7 @@
     "url": "./models/sunflower/scene.gltf",
     "model_glb": "./models/sunflower/scene.gltf",
     "model_usdz": "./models/Sunflower.usdz",
-    "height": 0.8,
+    "height": 0.3,
     "likes": "Любит солнце, тепло и умеренный полив",
     "description": "Светолюбивое растение. Любит яркое солнце и умеренный полив.",
     "comfort": {
