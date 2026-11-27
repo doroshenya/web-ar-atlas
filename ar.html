@@ -87,50 +87,84 @@
         <button id="ar-button" slot="ar-button">Поставить в AR</button>
     </model-viewer>
 
-    <script>
-        const viewer = document.getElementById('viewer');
-        const urlParams = new URLSearchParams(window.location.search);
-        const plantId = urlParams.get('id');
+      <script>
+    const viewer = document.getElementById('viewer');
+    const urlParams = new URLSearchParams(window.location.search);
+    const plantId = urlParams.get('id');
 
-        if (plantId) {
-            fetch('data/plants.json')
-                .then(res => res.json())
-                .then(data => {
-                    const plant = data.find(p => p.id === plantId);
-                    if (plant) {
-                        // 1. Ставим модель и масштаб (как в рабочей версии)
-                        viewer.src = plant.model_glb || plant.url;
-                        if (plant.model_usdz) {
-                            viewer.setAttribute('ios-src', plant.model_usdz);
-                        }
-                        viewer.alt = `3D модель растения ${plant.name}`;
+    if (plantId) {
+      fetch('data/plants.json')
+        .then(res => res.json())
+        .then(data => {
+          const plant = data.find(p => p.id === plantId);
+          if (plant) {
+            viewer.src = plant.model_glb || plant.url;
+            if (plant.model_usdz) {
+              viewer.setAttribute('ios-src', plant.model_usdz);
+            }
+            viewer.alt = `3D модель растения ${plant.name}`;
 
-                        if (plant.id === 'cactus') {
-                            viewer.setAttribute('scale', '0.01 0.01 0.01');
-                            viewer.setAttribute('ar-scale', 'fixed');
-                        } else if (plant.id === 'sunflower') {
-                            viewer.setAttribute('scale', '0.005 0.005 0.005');
-                        }
+            // Настраиваем масштаб (как в рабочей версии)
+            if (plant.id === 'cactus') {
+              viewer.setAttribute('scale', '0.01 0.01 0.01');
+              viewer.setAttribute('ar-scale', 'fixed');
+            } else if (plant.id === 'sunflower') {
+              viewer.setAttribute('scale', '0.005 0.005 0.005');
+            }
 
-                        // 2. Добавляем метки (Hotspots)
-                        if (plant.hotspots && plant.hotspots.length > 0) {
-                            plant.hotspots.forEach((hs, index) => {
-                                const spot = document.createElement('button');
-                                spot.className = 'hotspot';
-                                spot.setAttribute('slot', `hotspot-${index}`);
-                                spot.setAttribute('data-position', hs.position);
-                                spot.setAttribute('data-normal', '0m 1m 0m'); // Направление "вверх"
-                                spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`;
-                                
-                                viewer.appendChild(spot);
-                            });
-                        }
+            // Добавляем метки
+            if (plant.hotspots && plant.hotspots.length > 0) {
+              plant.hotspots.forEach((hs, index) => {
+                const spot = document.createElement('button');
+                spot.className = 'hotspot';
+                spot.setAttribute('slot', `hotspot-${index}`);
+                spot.setAttribute('data-position', hs.position);
+                spot.setAttribute('data-normal', '0m 1m 0m');
+                
+                // Создаем текст внутри метки
+                spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`;
 
-                        viewer.style.display = 'block';
+                // --- МАГИЯ КЛИКА ---
+                spot.addEventListener('click', () => {
+                    // 1. Показываем текст (если он был скрыт)
+                    // (Можно оставить, как есть, текст и так появится)
+
+                    // 2. Приближаем камеру к метке
+                    // camera-orbit="theta phi radius" 
+                    // theta: угол поворота (градусы), phi: наклон, radius: расстояние
+                    // Мы берем координаты метки, чтобы понять, куда смотреть
+                    // Но проще задать фиксированный зум для всех:
+                    
+                    // Если это кактус:
+                    if (plant.id === 'cactus') {
+                         viewer.setAttribute('camera-orbit', '0deg 75deg 0.5m'); 
+                    } else if (plant.id === 'sunflower') {
+                         viewer.setAttribute('camera-orbit', '0deg 75deg 0.8m');
+                    } else {
+                         viewer.setAttribute('camera-orbit', '0deg 75deg 1m');
                     }
-                })
-                .catch(err => console.error("Ошибка загрузки JSON:", err));
+                    
+                    // 3. Делаем плавный переход (чтобы не было резко)
+                    viewer.setAttribute('interpolation-decay', '200');
+                });
+
+                viewer.appendChild(spot);
+              });
+            }
+
+            viewer.style.display = 'block';
+          }
+        })
+        .catch(err => console.error("Ошибка загрузки JSON:", err));
+    }
+
+    // Возврат камеры в исходное положение при клике по пустому месту
+    viewer.addEventListener('click', (e) => {
+        // Если кликнули не по метке (а по самой модели или фону)
+        if (!e.target.classList.contains('hotspot')) {
+            viewer.setAttribute('camera-orbit', '0deg 75deg 2m'); // Отдаляем
         }
-    </script>
+    });
+  </script>
 </body>
 </html>
