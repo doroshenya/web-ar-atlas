@@ -4,20 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AR Просмотр растения</title>
-    <!-- Подключаем библиотеку model-viewer от Google -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; overflow: hidden; background-color: #f0f0f0; }
+        body { margin: 0; font-family: sans-serif; overflow: hidden; background-color: #f4f7f5; }
         
-        /* Контейнер для 3D-модели на весь экран */
         model-viewer { 
             width: 100vw; 
             height: 100vh; 
-            background-color: #f0f0f0;
+            background-color: #f4f7f5;
             --poster-color: transparent;
         }
         
-        /* Кнопка назад */
         .back-btn {
             position: absolute;
             top: 20px;
@@ -32,7 +29,6 @@
             font-weight: bold;
             cursor: pointer;
             backdrop-filter: blur(5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
         #loading {
@@ -43,6 +39,25 @@
             font-size: 18px;
             color: #333;
             z-index: 10;
+            text-align: center;
+        }
+
+        /* Плашка с предупреждением, если AR не поддерживается */
+        #ar-warning {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 14px;
+            text-align: center;
+            display: none; /* Показываем только если AR не работает */
+            z-index: 20;
+            max-width: 90%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -51,11 +66,6 @@
     <div id="loading">Загрузка модели…</div>
     <button class="back-btn" onclick="history.back()">← Назад</button>
 
-    <!-- 
-        Этот тег создает AR-сцену. 
-        ar - включает кнопку AR.
-        ar-placement="floor" - ставит модель на пол.
-    -->
     <model-viewer 
         id="plantViewer"
         src="" 
@@ -71,18 +81,22 @@
         style="display: none;">
     </model-viewer>
 
+    <div id="ar-warning">
+        Ваше устройство не поддерживает AR-камеру. <br>
+        Вы можете покрутить 3D-модель пальцем.
+    </div>
+
     <script>
         const viewer = document.getElementById('plantViewer');
         const loading = document.getElementById('loading');
+        const warning = document.getElementById('ar-warning');
 
-        // Получаем ID растения из ссылки
         const urlParams = new URLSearchParams(window.location.search);
         const plantId = urlParams.get('id');
 
         if (!plantId) {
             loading.textContent = 'Ошибка: не указан ID растения.';
         } else {
-            // Загружаем данные и подставляем пути к моделям
             fetch('data/plants.json')
                 .then(res => res.json())
                 .then(data => {
@@ -92,17 +106,29 @@
                         return;
                     }
 
-                    // Главная магия: подставляем модель в формате GLB и USDZ
                     viewer.src = plant.model_glb || plant.url;
                     if (plant.model_usdz) {
                         viewer.setAttribute('ios-src', plant.model_usdz);
                     }
                     
                     viewer.alt = `3D модель растения ${plant.name}`;
-                    
-                    // Показываем модель
                     viewer.style.display = 'block';
                     loading.style.display = 'none';
+
+                    // --- ПРОВЕРКА ПОДДЕРЖКИ AR ---
+                    // Если браузер не поддерживает WebXR, показываем предупреждение
+                    if (navigator.xr) {
+                        navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                            if (!supported) {
+                                warning.style.display = 'block'; // Показываем плашку
+                            }
+                        }).catch(() => {
+                            warning.style.display = 'block';
+                        });
+                    } else {
+                        // Если navigator.xr вообще нет (старый браузер)
+                        warning.style.display = 'block';
+                    }
                 })
                 .catch(err => {
                     console.error(err);
