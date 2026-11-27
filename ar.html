@@ -52,7 +52,7 @@
         <button id="ar-button" slot="ar-button">Поставить в AR</button>
     </model-viewer>
 
-    <script>
+        <script>
         const viewer = document.getElementById('viewer');
         const urlParams = new URLSearchParams(window.location.search);
         const plantId = urlParams.get('id');
@@ -68,16 +68,16 @@
                             viewer.setAttribute('ios-src', plant.model_usdz);
                         }
                         viewer.alt = `3D модель растения ${plant.name}`;
-                        
-                        // --- ГЛАВНАЯ МАГИЯ ---
-                        // Если это кактус или подсолнух, мы принудительно уменьшаем их
-                        // через атрибут scale в CSS (через JS).
+
+                        // --- МАГИЯ МАСШТАБА ---
+                        // Уменьшаем именно 3D-модель, а не всё окно.
                         if (plant.id === 'cactus') {
-                            viewer.style.transform = 'scale(0.05)'; // Уменьшаем кактус
+                            viewer.setAttribute('scale', '0.01 0.01 0.01'); // Для экрана
+                            viewer.setAttribute('ar-scale', 'fixed');      // Фиксируем в AR
+                            // Внимание: в AR мы не можем напрямую задать множитель, 
+                            // поэтому для AR придется использовать небольшую хитрость (см. ниже)
                         } else if (plant.id === 'sunflower') {
-                            viewer.style.transform = 'scale(0.02)'; // Уменьшаем подсолнух
-                        } else {
-                            viewer.style.transform = 'scale(1)'; // Папоротник оставляем как есть
+                            viewer.setAttribute('scale', '0.005 0.005 0.005');
                         }
 
                         viewer.style.display = 'block';
