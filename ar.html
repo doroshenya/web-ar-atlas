@@ -2,30 +2,39 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AR Просмотр растения</title>
+    <!-- Подключаем библиотеку model-viewer от Google -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; }
-        model-viewer { width: 100vw; height: 100vh; }
-        .controls {
+        body { margin: 0; font-family: sans-serif; overflow: hidden; background-color: #f0f0f0; }
+        
+        /* Контейнер для 3D-модели на весь экран */
+        model-viewer { 
+            width: 100vw; 
+            height: 100vh; 
+            background-color: #f0f0f0;
+            --poster-color: transparent;
+        }
+        
+        /* Кнопка назад */
+        .back-btn {
             position: absolute;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            pointer-events: none; /* чтобы не перекрывать AR-кнопку */
-        }
-        .controls button {
-            pointer-events: auto;
-            padding: 10px 20px;
-            border-radius: 20px;
-            border: none;
-            background: #4caf50;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.6);
             color: white;
+            border: none;
+            border-radius: 25px;
             font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+        
         #loading {
             position: absolute;
             top: 50%;
@@ -33,16 +42,19 @@
             transform: translate(-50%, -50%);
             font-size: 18px;
             color: #333;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
 
     <div id="loading">Загрузка модели…</div>
+    <button class="back-btn" onclick="history.back()">← Назад</button>
 
     <!-- 
-      Атрибуты src и ios-src будут заменены скриптом ниже.
-      Пока оставляем пустыми.
+        Этот тег создает AR-сцену. 
+        ar - включает кнопку AR.
+        ar-placement="floor" - ставит модель на пол.
     -->
     <model-viewer 
         id="plantViewer"
@@ -59,54 +71,44 @@
         style="display: none;">
     </model-viewer>
 
-    <div class="controls">
-        <button onclick="history.back()">← Назад</button>
-    </div>
-
     <script>
         const viewer = document.getElementById('plantViewer');
         const loading = document.getElementById('loading');
 
-        // 1. Получаем ID растения из URL (например, ar.html?id=fern)
+        // Получаем ID растения из ссылки
         const urlParams = new URLSearchParams(window.location.search);
         const plantId = urlParams.get('id');
 
         if (!plantId) {
-            loading.textContent = 'Ошибка: не указан ID растения в адресе.';
+            loading.textContent = 'Ошибка: не указан ID растения.';
         } else {
-            // 2. Загружаем данные из общего plants.json
+            // Загружаем данные и подставляем пути к моделям
             fetch('data/plants.json')
-                .then(res => {
-                    if (!res.ok) throw new Error('Не удалось загрузить plants.json');
-                    return res.json();
-                })
+                .then(res => res.json())
                 .then(data => {
-                    // 3. Ищем нужное растение по id
                     const plant = data.find(p => p.id === plantId);
                     if (!plant) {
-                        loading.textContent = `Растение "${plantId}" не найдено.`;
+                        loading.textContent = 'Растение не найдено.';
                         return;
                     }
 
-                    // 4. Подставляем пути к моделям
-                    viewer.src = plant.model_glb || plant.url;   // fallback на url
-                    viewer.setAttribute('ios-src', plant.model_usdz || '');
+                    // Главная магия: подставляем модель в формате GLB и USDZ
+                    viewer.src = plant.model_glb || plant.url;
+                    if (plant.model_usdz) {
+                        viewer.setAttribute('ios-src', plant.model_usdz);
+                    }
+                    
                     viewer.alt = `3D модель растения ${plant.name}`;
                     
-                    // 5. Показываем viewer, скрываем загрузку
+                    // Показываем модель
                     viewer.style.display = 'block';
                     loading.style.display = 'none';
                 })
                 .catch(err => {
                     console.error(err);
-                    loading.textContent = 'Ошибка загрузки данных о растении.';
+                    loading.textContent = 'Ошибка загрузки данных.';
                 });
         }
-
-        // Логируем успешную загрузку модели
-        viewer.addEventListener('load', () => {
-            console.log(`Модель ${plantId} загружена и готова к AR`);
-        });
     </script>
 </body>
 </html>
