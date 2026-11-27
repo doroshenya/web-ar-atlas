@@ -88,7 +88,7 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const plantId = urlParams.get('id') || 'cactus';
-
+        const autoStartAR = urlParams.get('ar') === 'true';
         async function init() {
             // 1. Загрузка данных
             try {
@@ -181,7 +181,9 @@
                 navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
                     if (supported) {
                         arButton.style.display = 'block';
-                        
+                        if (autoStartAR) {
+                            setTimeout(() => btn.click(), 1500); // Автозапуск через 1.5 секунды
+                        }
                         // Создаем AR-кнопку Three.js
                         const btn = ARButton.createButton(renderer, { 
                             requiredFeatures: ['hit-test'],
