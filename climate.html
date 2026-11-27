@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симуляция климата</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; background: #1a1a1a; color: white; }
+        #ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; width: 250px; z-index: 10; }
+        .slider-group { margin-bottom: 10px; }
+        label { display: block; font-size: 14px; margin-bottom: 5px; }
+        input[type=range] { width: 100%; }
+        #stress-indicator { font-size: 18px; font-weight: bold; margin-top: 10px; }
+        a { color: #4caf50; text-decoration: none; display: inline-block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <a href="index.html">← Назад в меню</a>
+        <h3 id="plant-name">Загрузка...</h3>
+        
+        <div class="slider-group">
+            <label>Температура: <span id="temp-val">22</span>°C</label>
+            <input type="range" id="temp-slider" min="-10" max="45" value="22">
+        </div>
+        
+        <div class="slider-group">
+            <label>Влажность: <span id="hum-val">50</span>%</label>
+            <input type="range" id="hum-slider" min="0" max="100" value="50">
+        </div>
+        
+        <div class="slider-group">
+            <label>Свет: <span id="light-val">500</span> лк</label>
+            <input type="range" id="light-slider" min="0" max="3000" value="500">
+        </div>
+
+        <div id="stress-indicator">Стресс: 0%</div>
+    </div>
+
+    <!-- Подключаем Three.js через CDN (importmap) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { calculateStress } from './js/ClimateModel.js';
+        import { applyVisualResponse } from './js/PlantVisuals.js';
+        import { ParticleManager } from './js/ParticleManager.js';
+
+        let scene, camera, renderer, model, controls, particleManager;
+        let currentConditions = { temperature: 22, humidity: 50, light: 500 };
+        let plantData = null;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const plantId = urlParams.get('id') || 'cactus';
+
+        async function init() {
+            try {
+                const res = await fetch('data/plants.json');
+                const data = await res.json();
+                plantData = data.find(p => p.id === plantId);
+                if (!plantData) throw new Error("Растение не найдено в JSON");
+                document.getElementById('plant-name').textContent = plantData.name;
+            } catch (e) {
+                console.error("Ошибка загрузки JSON:", e);
+                document.getElementById('plant-name').textContent = "Ошибка данных";
+                return;
+            }
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x222222);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 1.5, 3);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 0.5, 0);
+            controls.update();
+
+            // Создаем менеджер частиц
+            particleManager = new ParticleManager(scene);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const groundGeo = new THREE.CylinderGeometry(0.5, 0.4, 0.3, 32);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x5a4632 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.position.y = -0.15;
+            scene.add(ground);
+
+            const loader = new GLTFLoader();
+            loader.load(plantData.url, (gltf) => {
+                model = gltf.scene;
+                
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const scaleFactor = plantData.height / size.y; 
+                model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                
+                const boxScaled = new THREE.Box3().setFromObject(model);
+                model.position.y = -boxScaled.min.y; 
+                
+                scene.add(model);
+                updatePlantState();
+            }, undefined, (error) => {
+                console.error("Ошибка загрузки модели:", error);
+            });
+
+            document.getElementById('temp-slider').addEventListener('input', (e) => {
+                currentConditions.temperature = parseFloat(e.target.value);
+                document.getElementById('temp-val').textContent = e.target.value;
+                updatePlantState();
+            });
+            document.getElementById('hum-slider').addEventListener('input', (e) => {
+                currentConditions.humidity = parseFloat(e.target.value);
+                document.getElementById('hum-val').textContent = e.target.value;
+                updatePlantState();
+            });
+            document.getElementById('light-slider').addEventListener('input', (e) => {
+                currentConditions.light = parseFloat(e.target.value);
+                document.getElementById('light-val').textContent = e.target.value;
+                updatePlantState();
+            });
+
+            animate(); // Запускаем цикл рендеринга
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Единая функция анимации
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            if (particleManager) particleManager.update(); // Обновляем частицы
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        function updatePlantState() {
+            if (!model || !plantData) return;
+            
+            const stress = calculateStress(currentConditions, plantData);
+            
+            const stressPercent = Math.round(stress * 100);
+            const indicator = document.getElementById('stress-indicator');
+            indicator.textContent = `Стресс: ${stressPercent}%`;
+            
+            if (stress < 0.3) indicator.style.color = '#4caf50';
+            else if (stress < 0.7) indicator.style.color = '#ffeb3b';
+            else indicator.style.color = '#f44336';
+
+            applyVisualResponse(model, stress);
+
+            // Логика частиц
+            let weatherMode = null;
+            if (currentConditions.temperature > 35) weatherMode = 'dust';
+            else if (currentConditions.temperature < 5) weatherMode = 'snow';
+            else if (currentConditions.humidity > 90) weatherMode = 'rain';
+            
+            if (particleManager) particleManager.setMode(weatherMode);
+        }
+
+        init();
+    </script>
+</body>
+</html>
