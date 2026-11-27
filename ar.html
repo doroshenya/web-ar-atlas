@@ -9,50 +9,16 @@
     body { margin: 0; background: #0e1a12; color: white; font-family: system-ui, sans-serif; }
     model-viewer { width: 100vw; height: 100vh; background: #1d3426; }
     
-    /* Стили для наших меток */
-    .hotspot {
-      background: #4caf50;
-      border-radius: 50%;
-      border: 2px solid white;
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      animation: pulse 1.5s infinite;
-    }
-    
-    /* Текст, который появляется при клике */
-    .hotspot-label {
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      position: absolute;
-      top: -40px;
-      left: 50%;
-      transform: translateX(-50%);
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    /* Показываем текст при наведении/клике */
-    .hotspot:hover .hotspot-label { opacity: 1; }
-
-    @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-    }
-
+    /* Кнопка назад */
     .back-btn {
       position: absolute; top: 20px; left: 20px; z-index: 100;
       padding: 10px 18px; background: rgba(0,0,0,0.6); color: white;
       border: none; border-radius: 25px; font-size: 14px; cursor: pointer;
     }
+
+    /* Кнопка AR */
     #ar-button {
-      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+      position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
       padding: 15px 30px; border-radius: 999px; border: 2px solid white;
       background: #4caf50; color: white; font-size: 18px; font-weight: bold;
       cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
@@ -63,6 +29,7 @@
 
   <button class="back-btn" onclick="history.back()">← Назад</button>
 
+  <!-- Убрали сложные проверки, оставили чистый model-viewer -->
   <model-viewer 
     id="viewer"
     src="" 
@@ -85,7 +52,10 @@
 
     if (plantId) {
       fetch('data/plants.json')
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("Не удалось загрузить plants.json");
+            return res.json();
+        })
         .then(data => {
           const plant = data.find(p => p.id === plantId);
           if (plant) {
@@ -96,31 +66,21 @@
             }
             viewer.alt = `3D модель растения ${plant.name}`;
 
-            // 2. Применяем масштаб (если нужно)
+            // 2. Масштаб (кактус и подсолнух)
             if (plant.id === 'cactus') {
               viewer.setAttribute('scale', '0.01 0.01 0.01');
             } else if (plant.id === 'sunflower') {
               viewer.setAttribute('scale', '0.005 0.005 0.005');
             }
 
-            // 3. Добавляем Hotspots, если они есть в JSON
-            if (plant.hotspots && plant.hotspots.length > 0) {
-              plant.hotspots.forEach((hs, index) => {
-                const spot = document.createElement('button');
-                spot.className = 'hotspot';
-                spot.setAttribute('slot', `hotspot-${index}`);
-                spot.setAttribute('data-position', hs.position);
-                spot.setAttribute('data-normal', '0m 1m 0m'); // Направление, куда смотрит точка
-                
-                // Внутрь точки кладем текст
-                spot.innerHTML = `<div class="hotspot-label">${hs.text}</div>`;
-                
-                viewer.appendChild(spot);
-              });
-            }
+            // Временно УБРАЛИ добавление Hotspots, чтобы проверить, работает ли AR
+            // Если AR заработает, мы вернем их обратно.
           }
         })
-        .catch(err => console.error("Ошибка загрузки JSON:", err));
+        .catch(err => {
+            console.error(err);
+            document.body.innerHTML += '<div style="position:absolute; top:50%; width:100%; text-align:center; color:red; z-index:999;">Ошибка загрузки JSON. Проверьте консоль (F12).</div>';
+        });
     }
   </script>
 </body>
